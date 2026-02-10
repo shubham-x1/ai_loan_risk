@@ -23,7 +23,13 @@ app.add_middleware(
 
 # MongoDB connection
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
-client = AsyncIOMotorClient(MONGO_URL)
+client = AsyncIOMotorClient(
+    MONGO_URL,
+    serverSelectionTimeoutMS=5000,
+    connectTimeoutMS=10000,
+    w='majority',  # Explicit write concern
+    journal=True
+)
 db = client.loan_risk_db
 applications_collection = db.applications
 
