@@ -8,6 +8,7 @@ from model import LoanApplication, PredictionResponse
 import os
 from typing import List
 import pandas as pd
+import traceback
 
 app = FastAPI(title="AI Loan Risk API")
 
@@ -197,8 +198,10 @@ async def predict_loan(application: LoanApplication):
         )
     
     except Exception as e:
+        print("PREDICT ERROR:")
+        print(traceback.format_exc())   # this prints full error in Render logs
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @app.get("/api/applications")
 async def get_applications(limit: int = 50):
     """Get recent applications"""
