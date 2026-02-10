@@ -140,11 +140,22 @@ async def root():
 
 @app.post("/api/predict", response_model=PredictionResponse)
 async def predict_loan(application: LoanApplication):
+
     """Predict loan approval and risk"""
     if model is None:
         raise HTTPException(status_code=500, detail="Model not loaded")
     
     try:
+        # ✅ ADD THIS BLOCK HERE (input validation)
+        if application.applicant_income <= 0:
+            raise HTTPException(status_code=400, detail="Applicant income must be greater than 0")
+
+        if application.loan_amount <= 0:
+            raise HTTPException(status_code=400, detail="Loan amount must be greater than 0")
+
+        if application.loan_amount_term <= 0:
+            raise HTTPException(status_code=400, detail="Loan term must be greater than 0")
+
         # Preprocess input
         features = preprocess_input(application)
         
@@ -159,6 +170,7 @@ async def predict_loan(application: LoanApplication):
         interest_rate = calculate_interest_rate(risk_score, approved)
         fraud_flag = detect_fraud(application)
         explanation = generate_explanation(approved, risk_score, application)
+
         
         # Save to database
         app_data = application.dict()
