@@ -7,6 +7,7 @@ from datetime import datetime
 from model import LoanApplication, PredictionResponse
 import os
 from typing import List
+import pandas as pd
 
 app = FastAPI(title="AI Loan Risk API")
 
@@ -60,14 +61,16 @@ def preprocess_input(application: LoanApplication):
     
     # Create feature array in correct order
     features = [data[col] for col in feature_names]
-    return np.array(features).reshape(1, -1)
+    return pd.DataFrame([data])[feature_names]
 
 def calculate_risk_score(probability: float, application: LoanApplication) -> float:
     """Calculate risk score (0-100)"""
     base_risk = (1 - probability) * 100
     
-    # Adjust based on factors
-    income_ratio = application.loan_amount / (application.applicant_income / 12)
+    # Prevent division by zero
+    monthly_income = max(application.applicant_income / 12, 1)
+    income_ratio = application.loan_amount / monthly_income
+    
     if income_ratio > 3:
         base_risk += 10
     
@@ -75,6 +78,7 @@ def calculate_risk_score(probability: float, application: LoanApplication) -> fl
         base_risk += 20
     
     return min(base_risk, 100)
+
 
 def calculate_interest_rate(risk_score: float, approved: bool) -> float:
     """Calculate suggested interest rate"""
@@ -109,7 +113,10 @@ def generate_explanation(approved: bool, risk_score: float, application: LoanApp
     if application.credit_history < 1.0:
         reasons.append("poor credit history")
     
-    income_ratio = application.loan_amount / (application.applicant_income / 12)
+    # Prevent division by zero
+    monthly_income = max(application.applicant_income / 12, 1)
+    income_ratio = application.loan_amount / monthly_income
+    
     if income_ratio > 3:
         reasons.append("high loan-to-income ratio")
     
@@ -119,13 +126,13 @@ def generate_explanation(approved: bool, risk_score: float, application: LoanApp
     
     if approved:
         if risk_score < 30:
-            return f"✅ Application approved with low risk. Applicant shows strong financial profile with good credit history."
+            return "✅ Application approved with low risk. Applicant shows strong financial profile."
         else:
             reason_text = ", ".join(reasons) if reasons else "moderate risk factors"
-            return f"✅ Application approved but with elevated risk due to: {reason_text}. Higher interest rate recommended."
+            return f"✅ Application approved with elevated risk due to {reason_text}."
     else:
         reason_text = ", ".join(reasons) if reasons else "overall risk assessment"
-        return f"❌ Application rejected due to: {reason_text}. Recommend improving credit score and income stability."
+        return f"❌ Application rejected due to {reason_text}."
 
 @app.get("/")
 async def root():
