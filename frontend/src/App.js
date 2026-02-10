@@ -3,7 +3,7 @@ import axios from 'axios';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './App.css';
 
-const API_URL = 'https://ai-loan-risk.onrender.com/';
+const API_URL = 'https://ai-loan-risk.onrender.com/api';
 
 function App() {
   const [activeTab, setActiveTab] = useState('predict');
